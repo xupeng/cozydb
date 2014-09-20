@@ -25,7 +25,8 @@ class CozyCursor(object):
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
-        self.kwargs['init_command'] = 'set names utf8'
+        if 'init_command' not in self.args:
+            self.kwargs['init_command'] = 'set names utf8'
         self.cursor = self.get_raw_cursor()
 
     def get_raw_cursor(self):
