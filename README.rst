@@ -1,10 +1,10 @@
 cozydb is a cozy MySQL-python wrapper.
 
-Features::
+Features:
 
-  1. Automatically reconnect to MySQL server after disconnectted.
-  2. Fetch results as dictionary without using DictCursor
-  3. Support `execute` retry
+1. Automatically reconnect to MySQL server after disconnectted.
+2. Fetch results as dictionary without using DictCursor
+3. Support `execute` retry
 
 Example::
 
