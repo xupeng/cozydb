@@ -9,7 +9,7 @@ class CozyStore(object):
 
         self.args = args
         self.kwargs = kwargs
-        self.cursor = None
+        self._cursor = None
 
     def get_cursor(self, use_cache=True):
         ''' Get a cursor, return the same cursor if use_cache is True.
@@ -18,21 +18,16 @@ class CozyStore(object):
         if not use_cache:
             return CozyCursor(*self.args, **self.kwargs)
 
-        if self.cursor is None or self.cursor.is_closed:
-            self.cursor = CozyCursor(*self.args, **self.kwargs)
-        return self.cursor
+        if self._cursor is None:
+            self._cursor = CozyCursor(*self.args, **self.kwargs)
+        return self._cursor
 
     def close(self):
         ''' Close the connection.
         '''
 
-        try:
-            self.cursor.close()
-            self.cursor.connection.close()
-        except Exception:
-            pass
-        finally:
-            self.cursor = None
+        self._cursor.close()
+        self._cursor = None
 
 
 class CozyCursor(object):
@@ -44,44 +39,29 @@ class CozyCursor(object):
         self.kwargs = kwargs
         if 'init_command' not in self.args:
             self.kwargs['init_command'] = 'set names utf8'
-        self.cursor = self.get_raw_cursor()
+        self._cursor = None
 
-    def get_raw_cursor(self):
+    @property
+    def cursor(self):
         ''' Get a MySQLdb.cursors.Cursor
         '''
 
-        conn = MySQLdb.connect(*self.args, **self.kwargs)
-        cursor = conn.cursor()
-        cursor.execute('select @@version')
-        rs = cursor.fetchone()
-        if rs:
-            if isinstance(rs, dict) and '@@version' in rs:
-                self._server_version = rs['@@version']
-            elif isinstance(rs, tuple):
-                self._server_version = rs[0]
-        return cursor
+        if self._cursor is None:
+            conn = MySQLdb.connect(*self.args, **self.kwargs)
+            self._cursor = conn.cursor()
+        return self._cursor
 
     def __getattr__(self, name):
-        if self.is_closed:
-            self.cursor = self.get_raw_cursor()
         return getattr(self.cursor, name)
 
     def close(self):
         try:
-            self.cursor.close()
-            self.cursor.connection.close()
+            self._cursor.close()
+            self._cursor.connection.close()
         except Exception:
             pass
         finally:
-            self.cursor = None
-
-    @property
-    def server_version(self):
-        return getattr(self, '_server_version', '')
-
-    @property
-    def is_closed(self):
-        return self.cursor is None
+            self._cursor = None
 
     def execute(self, sql, args=None, retry=0, sleep=0.1, force_retry=False):
         ''' Execute query, with retry support.
@@ -89,13 +69,11 @@ class CozyCursor(object):
         For transaction safety, only retry readonly queries.
         '''
 
-        read_only_queries = {'select', 'show'}
+        readonly_queries = {'select', 'show'}
         query_type = sql.strip().split(None, 1)[0].lower()
-        retry = max(int(retry), 0) if force_retry or \
-            query_type in read_only_queries else 0
+        retry = max(int(retry), 0) if force_retry or query_type in \
+                readonly_queries else 0
         for i in xrange(retry + 1):
-            if self.is_closed:
-                self.cursor = self.get_raw_cursor()
             try:
                 return self.cursor.execute(sql, args)
             except MySQLdb.OperationalError, oe:
