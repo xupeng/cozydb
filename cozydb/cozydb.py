@@ -4,11 +4,17 @@ import MySQLdb
 
 class CozyStore(object):
     def __init__(self, *args, **kwargs):
+        ''' Accept the same arguments as MySQLdb.connect.
+        '''
+
         self.args = args
         self.kwargs = kwargs
         self.cursor = None
 
     def get_cursor(self, use_cache=True):
+        ''' Get a cursor, return the same cursor if use_cache is True.
+        '''
+
         if not use_cache:
             return CozyCursor(*self.args, **self.kwargs)
 
@@ -17,12 +23,23 @@ class CozyStore(object):
         return self.cursor
 
     def close(self):
-        self.cursor.connection.close()
-        self.cursor = None
+        ''' Close the connection.
+        '''
+
+        try:
+            self.cursor.close()
+            self.cursor.connection.close()
+        except Exception:
+            pass
+        finally:
+            self.cursor = None
 
 
 class CozyCursor(object):
     def __init__(self, *args, **kwargs):
+        ''' Accept the same arguments as MySQLdb.connect.
+        '''
+
         self.args = args
         self.kwargs = kwargs
         if 'init_command' not in self.args:
@@ -30,6 +47,9 @@ class CozyCursor(object):
         self.cursor = self.get_raw_cursor()
 
     def get_raw_cursor(self):
+        ''' Get a MySQLdb.cursors.Cursor
+        '''
+
         conn = MySQLdb.connect(*self.args, **self.kwargs)
         cursor = conn.cursor()
         cursor.execute('select @@version')
@@ -48,11 +68,12 @@ class CozyCursor(object):
 
     def close(self):
         try:
-            self.cursor.connection.close()
             self.cursor.close()
+            self.cursor.connection.close()
         except Exception:
             pass
-        self.cursor = None
+        finally:
+            self.cursor = None
 
     @property
     def server_version(self):
@@ -63,10 +84,9 @@ class CozyCursor(object):
         return self.cursor is None
 
     def execute(self, sql, args=None, retry=0, sleep=0.1, force_retry=False):
-        ''' Execute query, with retry support
+        ''' Execute query, with retry support.
 
-
-        For transaction safety, only retry SELECT query
+        For transaction safety, only retry readonly queries.
         '''
 
         read_only_queries = {'select', 'show'}
@@ -88,7 +108,7 @@ class CozyCursor(object):
                     time.sleep(sleep)
 
     def fetchone(self, as_dict=False):
-        ''' Fetch one record from results set
+        ''' Fetch one record from results set.
 
         return:
             dict if as_dict is True
