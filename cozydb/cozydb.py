@@ -38,7 +38,7 @@ class CozyCursor(object):
         self.args = args
         self.kwargs = kwargs
         if 'init_command' not in self.kwargs:
-            self.kwargs['init_command'] = 'set names utf8'
+            self.kwargs['init_command'] = 'set names utf8mb4'
         self._cursor = None if lazy else self._get_cursor()
 
     def _get_cursor(self):
@@ -74,8 +74,8 @@ class CozyCursor(object):
 
         readonly_queries = {'select', 'show'}
         query_type = sql.strip().split(None, 1)[0].lower()
-        retry = max(int(retry), 0) if force_retry or query_type in \
-                readonly_queries else 0
+        retry = (max(int(retry), 0) if force_retry or query_type in
+                 readonly_queries else 0)
         for i in xrange(retry + 1):
             try:
                 return self.cursor.execute(sql, args)
