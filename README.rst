@@ -1,4 +1,4 @@
-cozydb is a cozy MySQL-python wrapper.
+cozydb is a cozy mysqlclient wrapper.
 
 Features:
 

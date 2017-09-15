@@ -1,3 +1,5 @@
+from past.builtins import xrange
+
 import time
 import MySQLdb
 
@@ -79,7 +81,7 @@ class CozyCursor(object):
         for i in xrange(retry + 1):
             try:
                 return self.cursor.execute(sql, args)
-            except MySQLdb.OperationalError, oe:
+            except MySQLdb.OperationalError as oe:
                 # Only re-connect when error code is between 2000 and 3000
                 if 2000 <= oe.args[0] < 3000:
                     self.close()

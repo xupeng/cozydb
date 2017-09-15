@@ -1,11 +1,10 @@
 from setuptools import setup, find_packages
-import sys, os
 
 version = '0.1.8'
 
 setup(name='cozydb',
       version=version,
-      description="cozydb is a cozy MySQL-python wrapper",
+      description="cozydb is a cozy mysqlclient wrapper",
       long_description="""\
 """,
       classifiers=[
@@ -30,7 +29,8 @@ setup(name='cozydb',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          'MySQL-python',
+          'mysqlclient',
+          'future'
       ],
       entry_points="""
       # -*- Entry points: -*-
